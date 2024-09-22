@@ -11,21 +11,8 @@ require('dotenv').config();
 
 let connection = new Connection('https://api.devnet.solana.com', 'confirmed');
 
-// Load your main wallet's keypair
-const secret = JSON.parse(process.env.SECRET_KEY);
-const mainKeypair = Keypair.fromSecretKey(new Uint8Array(secret));
-
-// Create a temporary associated token account for each user
-// const createTemporaryAddress = async (seed) => {
-//   const tempAddress = new PublicKey("AHhf2wq98QgjHpjk4XxmY4oGV5inkNMAzwHmE8Cnr6wP");
-//   console.log('Temporary Address:', tempAddress.toBase58());
-//   return tempAddress;
-// };
-// const tempKeypair = Keypair.generate();
-// console.log('Temporary Address:', tempKeypair.publicKey.toBase58());
-
-// Monitor payments to the temporary address and transfer funds if received within 30 minutes
-const monitorPayment = async (tempKeypair, amountLamports, expiryTime) => {
+// Monitor payments to the temporary address and transfer funds if received
+const monitorPayment = async (tempKeypair, amountLamports, expiryTime, mainKeypair) => {
   const checkInterval = 10 * 1000; // Poll every 10 seconds
 
   const interval = setInterval(async () => {
@@ -98,12 +85,16 @@ const transferFunds = async (tempKeypair, mainKeypair) => {
 
       // Sign and send the transaction
       const signature = await sendAndConfirmTransaction(connection, transaction, [tempKeypair]);
-      console.log('Funds transferred and account closed! Transaction signature:', signature);
+      console.log('Funds transferred! Transaction signature:', signature);
+
+      return signature;
     } else {
       console.log('No balance available to transfer.');
+      return null;
     }
   } catch (error) {
     console.error("Error transferring funds:", error);
+    throw error;
   }
 };
 
