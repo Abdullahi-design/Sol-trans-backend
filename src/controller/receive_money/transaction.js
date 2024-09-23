@@ -15,38 +15,42 @@ let connection = new Connection('https://api.devnet.solana.com', 'confirmed');
 const monitorPayment = async (tempKeypair, amountLamports, expiryTime, mainKeypair) => {
   const checkInterval = 10 * 1000; // Poll every 10 seconds
 
-  const interval = setInterval(async () => {
-    const now = new Date();
+  return new Promise((resolve, reject) => {
+    const interval = setInterval(async () => {
+      const now = new Date().getTime();
 
-    if (now >= expiryTime) {
-      console.log("Payment request expired.");
-      clearInterval(interval);
-      return;
-    }
-
-    try {
-      // Check the balance of the temporary address
-      const balance = await connection.getBalance(tempKeypair.publicKey);
-
-      console.log('balance: ', balance);
-
-      if (balance >= amountLamports) {
-        console.log("Payment received:", balance / LAMPORTS_PER_SOL, "SOL");
+      if (now >= expiryTime) {
+        console.log("Payment request expired.");
         clearInterval(interval);
-
-        // Transfer the funds to your main wallet
-        await transferFunds(tempKeypair, mainKeypair);
-        return;
-      } else {
-        console.log("Waiting for payment...");
+        return resolve(null); // Indicate that no funds were received within the time frame
       }
-    } catch (error) {
-      console.error("Error monitoring payment:", error);
-    }
-  }, checkInterval);
+
+      try {
+        // Check the balance of the temporary address
+        const balance = await connection.getBalance(tempKeypair.publicKey);
+
+        console.log('balance: ', balance);
+
+        if (balance >= amountLamports) {
+          console.log("Payment received:", balance / LAMPORTS_PER_SOL, "SOL");
+          clearInterval(interval);
+
+          // Transfer the funds to your main wallet
+          const signature = await transferFunds(tempKeypair, mainKeypair);
+          return resolve(signature); // Return the transaction signature after successful transfer
+        } else {
+          console.log("Waiting for payment...");
+        }
+      } catch (error) {
+        console.error("Error monitoring payment:", error);
+        clearInterval(interval);
+        return reject(error); // Reject on error
+      }
+    }, checkInterval);
+  });
 };
 
-// When transferring funds, you will pass the tempKeypair to sign the transaction
+// Transfer funds from temporary account to main account
 const transferFunds = async (tempKeypair, mainKeypair) => {
   try {
     const balance = await connection.getBalance(tempKeypair.publicKey);
@@ -71,7 +75,7 @@ const transferFunds = async (tempKeypair, mainKeypair) => {
 
       if (transferAmount <= 0) {
         console.log('Not enough lamports to cover transaction fees');
-        return;
+        return null;
       }
 
       // Add transfer instruction
@@ -87,7 +91,7 @@ const transferFunds = async (tempKeypair, mainKeypair) => {
       const signature = await sendAndConfirmTransaction(connection, transaction, [tempKeypair]);
       console.log('Funds transferred! Transaction signature:', signature);
 
-      return signature;
+      return signature; // Return the transaction signature
     } else {
       console.log('No balance available to transfer.');
       return null;

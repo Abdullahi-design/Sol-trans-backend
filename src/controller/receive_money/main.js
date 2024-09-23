@@ -1,43 +1,47 @@
 const { LAMPORTS_PER_SOL, Keypair, PublicKey } = require('@solana/web3.js');
 const { monitorPayment } = require("./transaction");
+// const { broadcastSignature } = require('../../lib/broadcast');
+// const { broadcastSignature } = require('../..');
+// const { broadcastSignature } = require('../..');
 
-async function transferRequest(req, res) {
+let lastSignature = null;
 
+// WebSocket-compatible transferRequest function
+async function transferRequestWS({ publicKey, solAmount }, ws) {
     try {
-        const { publicKey, solAmount } = req.body;
-        // Load your main wallet's keypair
         const secret = JSON.parse(process.env.SECRET_KEY);
         const mainKeypair = Keypair.fromSecretKey(new Uint8Array(secret));
-
-        // Convert the wallet string input into a Uint8Array for the keypair
-        // const mainKeypair = Keypair.fromSecretKey(new Uint8Array(JSON.parse(mainWalletString)));
-
-        // Convert the provided public key string to a PublicKey object
         const userPublicKey = new PublicKey(publicKey);
-        console.log(`Transferring ${solAmount} SOL to user public key: ${userPublicKey.toBase58()}`);
+        console.log(`Requesting ${solAmount} SOL from user public key: ${userPublicKey.toBase58()}`);
 
-
-        // Generate a temporary keypair for payment monitoring
+        // Generate temporary keypair for payment
         const tempKeypair = Keypair.generate();
-        console.log('Temporary Address:', tempKeypair.publicKey.toBase58());
+        const tempAcc = tempKeypair.publicKey.toBase58();
+        console.log('Temporary Address:', tempAcc);
 
-        // Set the 30-minute expiry
-        const now = new Date();
-        const expiryTime = new Date(now.getTime() + 30 * 60 * 1000); // 30 minutes from now
-
-        // Convert SOL amount to lamports
         const amountLamports = solAmount * LAMPORTS_PER_SOL;
+        const expiryTime = new Date().getTime() + 30 * 60 * 1000; // 30 minutes expiry time
 
-        // Monitor for incoming payment
-        await monitorPayment(tempKeypair, amountLamports, expiryTime, mainKeypair);
+        // Send initial response to client with tempAcc
+        const initialResponse = { message: 'Send SOL here', solAmount, tempAcc };
+        ws.send(JSON.stringify(initialResponse));
 
-        res.status(200).json({ message: 'Funds transferred!' });
+        // Monitor for incoming payments
+        const signature = await monitorPayment(tempKeypair, amountLamports, expiryTime, mainKeypair);
+
+        if (signature) {
+            console.log('Transaction success. Signature:', signature);
+            lastSignature = signature; // Store signature for potential later use
+            ws.send(JSON.stringify({ signature, successMessage: 'Payment confirmed' }));
+            // broadcastSignature(signature); // Broadcast signature via WebSocket to all clients
+        } else {
+            console.log('Payment request expired or no funds transferred.');
+            ws.send(JSON.stringify({ errorMessage: 'No funds transferred or payment expired' }));
+        }
     } catch (error) {
-        console.error('Error:', error.response ? error.response.data : error.message);
-        res.status(500).json({ message: 'Transfering Funds', error: error.message });
-        throw error;
+        console.error('Error during transfer:', error.message);
+        ws.send(JSON.stringify({ errorMessage: error.message }));
     }
-
 }
 
-module.exports = { transferRequest }
+module.exports = { transferRequestWS };
