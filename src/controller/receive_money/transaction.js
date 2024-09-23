@@ -44,7 +44,7 @@ const monitorPayment = async (tempKeypair, amountLamports, expiryTime, mainKeypa
       } catch (error) {
         console.error("Error monitoring payment:", error);
         clearInterval(interval);
-        return reject(error); // Reject on error
+        return reject(error);
       }
     }, checkInterval);
   });

@@ -1,8 +1,5 @@
 const { LAMPORTS_PER_SOL, Keypair, PublicKey } = require('@solana/web3.js');
 const { monitorPayment } = require("./transaction");
-// const { broadcastSignature } = require('../../lib/broadcast');
-// const { broadcastSignature } = require('../..');
-// const { broadcastSignature } = require('../..');
 
 let lastSignature = null;
 
@@ -33,7 +30,6 @@ async function transferRequestWS({ publicKey, solAmount }, ws) {
             console.log('Transaction success. Signature:', signature);
             lastSignature = signature; // Store signature for potential later use
             ws.send(JSON.stringify({ signature, successMessage: 'Payment confirmed' }));
-            // broadcastSignature(signature); // Broadcast signature via WebSocket to all clients
         } else {
             console.log('Payment request expired or no funds transferred.');
             ws.send(JSON.stringify({ errorMessage: 'No funds transferred or payment expired' }));

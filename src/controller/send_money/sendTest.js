@@ -19,7 +19,7 @@ const secret = JSON.parse(process.env.SECRET_KEY);
 const fromKeypair = web3.Keypair.fromSecretKey(new Uint8Array(secret))
 let toKeypair = new web3.PublicKey("FxneRsYEQDDEhy5CiYaZfMMz2GZCLHP65UZo1LiaRsAf");
   
-// Airdrop 1 SOL to the sender's wallet for testing purposes
+// Airdrop 0.01 SOL to the sender's wallet for testing purposes
 (async () => {
     try {
         const transaction = new Transaction().add(
