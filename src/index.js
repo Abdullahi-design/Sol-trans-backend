@@ -3,8 +3,8 @@ const cors = require('cors');
 const WebSocket = require('ws');
 require('dotenv').config();
 
-const { transferRequestWS } = require('./controller/receive_money/main'); // Import WebSocket transfer function
-// const { broadcastSignature } = require('./broadcast'); // Import broadcast function
+const { transferRequestWS } = require('./controller/receive_money/main');
+// const { broadcastSignature } = require('./broadcast');
 
 const port = process.env.PORT;
 
