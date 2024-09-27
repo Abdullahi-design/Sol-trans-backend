@@ -6,9 +6,9 @@ let lastSignature = null;
 // WebSocket-compatible transferRequest function
 async function transferRequestWS({ publicKey, solAmount }, ws) {
     try {
-        const secret = JSON.parse(process.env.SECRET_KEY);
-        const mainKeypair = Keypair.fromSecretKey(new Uint8Array(secret));
+        // const secret = JSON.parse(process.env.SECRET_KEY);
         const userPublicKey = new PublicKey(publicKey);
+        const mainKeypair = userPublicKey.toBase58();
         console.log(`Requesting ${solAmount} SOL from user public key: ${userPublicKey.toBase58()}`);
 
         // Generate temporary keypair for payment
@@ -19,6 +19,11 @@ async function transferRequestWS({ publicKey, solAmount }, ws) {
         const amountLamports = solAmount * LAMPORTS_PER_SOL;
         const expiryTime = new Date().getTime() + 30 * 60 * 1000; // 30 minutes expiry time
 
+        //send expiry time
+        const expiryTimeResponse = { message: 'expiry Time', expiryTime};
+        ws.send(JSON.stringify(expiryTimeResponse));
+        console.log(expiryTimeResponse);
+        
         // Send initial response to client with tempAcc
         const initialResponse = { message: 'Send SOL here', solAmount, tempAcc };
         ws.send(JSON.stringify(initialResponse));

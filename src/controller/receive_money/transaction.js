@@ -59,7 +59,7 @@ const transferFunds = async (tempKeypair, mainKeypair) => {
     if (balance > 0) {
       console.log({
         fromPubkey: tempKeypair.publicKey, // Transfer from the temporary address
-        toPubkey: mainKeypair.publicKey,   // Transfer to the main wallet
+        toPubkey: mainKeypair,   // Transfer to the main wallet
       });
 
       // Create a transaction to transfer the balance
@@ -82,7 +82,7 @@ const transferFunds = async (tempKeypair, mainKeypair) => {
       transaction.add(
         SystemProgram.transfer({
           fromPubkey: tempKeypair.publicKey,
-          toPubkey: mainKeypair.publicKey,
+          toPubkey: mainKeypair,
           lamports: transferAmount,
         })
       );
