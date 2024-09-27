@@ -13,7 +13,7 @@ app.use(cors());
 app.use(express.json());
 
 const server = app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
+  console.log(`Server running on wss://localhost:${port}`);
 });
 
 // Set up WebSocket server
